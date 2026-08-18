@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Large / reproducible downloaded data
+data/raw/*.parquet
+data/raw/*.csv
+
+# Generated outputs that can be rebuilt
+outputs/figures/*
+outputs/tables/*
+
+# Keep directory placeholders if later added
+!.gitkeep
