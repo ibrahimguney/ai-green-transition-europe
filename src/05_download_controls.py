@@ -19,8 +19,13 @@ Controls:
    - nrg_cons = MWH500-1999 (band IC)
    - unit = KWH
    - tax = I_TAX
-   - currency = EUR
    - semester values are averaged to calendar-year means
+
+Important:
+The Eurostat Statistics API validates query parameters against actual dataset
+Dimensions. `currency=EUR` is intentionally NOT sent for nrg_pc_205 because
+`currency` is a visualisation/UI selector rather than a valid filter dimension
+for this Statistics API query; including it can produce HTTP 400.
 
 Outputs:
     data/raw/control_renewable_share.csv
@@ -115,12 +120,27 @@ def get_json(dataset: str, params: dict, retries: int = 4) -> dict:
     for attempt in range(1, retries + 1):
         try:
             response = requests.get(url, params=params, headers=headers, timeout=120)
+
+            # 4xx errors normally mean an invalid dataset filter/code. Retrying the
+            # same request four times will not help, so fail immediately and print
+            # Eurostat's response text for diagnosis.
+            if 400 <= response.status_code < 500:
+                detail = response.text.strip().replace("\n", " ")[:500]
+                raise ValueError(
+                    f"Eurostat HTTP {response.status_code} for {response.url}. "
+                    f"Response: {detail or '<empty>'}"
+                )
+
             response.raise_for_status()
             return response.json()
+
+        except ValueError:
+            raise
         except Exception as exc:
             last_error = exc
             print(f"[retry {attempt}/{retries}] {dataset}: {exc}")
-            time.sleep(2 * attempt)
+            if attempt < retries:
+                time.sleep(2 * attempt)
 
     raise RuntimeError(f"Download failed for {dataset}: {last_error}")
 
@@ -172,8 +192,12 @@ def standardise_annual(df: pd.DataFrame, value_name: str) -> pd.DataFrame:
 
 def standardise_electricity(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     if df.empty:
-        empty_sem = pd.DataFrame(columns=["geo", "semester", "time", "electricity_price_eur_kwh"])
-        empty_ann = pd.DataFrame(columns=["geo", "time", "electricity_price_eur_kwh"])
+        empty_sem = pd.DataFrame(
+            columns=["geo", "semester", "time", "electricity_price_eur_kwh"]
+        )
+        empty_ann = pd.DataFrame(
+            columns=["geo", "time", "electricity_price_eur_kwh"]
+        )
         return empty_sem, empty_ann
 
     out = df[["geo", "time", "value"]].copy()
@@ -245,7 +269,6 @@ def main():
             "nrg_cons": "MWH500-1999",
             "unit": "KWH",
             "tax": "I_TAX",
-            "currency": "EUR",
         },
     )
     electricity_semester, electricity_annual = standardise_electricity(electricity_raw)
@@ -254,13 +277,27 @@ def main():
 
     summary = pd.DataFrame(
         [
-            ["renewable_share", len(renewable), renewable["geo"].nunique() if not renewable.empty else 0],
-            ["real_gdp_pc_eur2010", len(gdp), gdp["geo"].nunique() if not gdp.empty else 0],
-            ["rd_intensity_pct_gdp", len(rd), rd["geo"].nunique() if not rd.empty else 0],
+            [
+                "renewable_share",
+                len(renewable),
+                renewable["geo"].nunique() if not renewable.empty else 0,
+            ],
+            [
+                "real_gdp_pc_eur2010",
+                len(gdp),
+                gdp["geo"].nunique() if not gdp.empty else 0,
+            ],
+            [
+                "rd_intensity_pct_gdp",
+                len(rd),
+                rd["geo"].nunique() if not rd.empty else 0,
+            ],
             [
                 "electricity_price_eur_kwh",
                 len(electricity_annual),
-                electricity_annual["geo"].nunique() if not electricity_annual.empty else 0,
+                electricity_annual["geo"].nunique()
+                if not electricity_annual.empty
+                else 0,
             ],
         ],
         columns=["control", "country_year_rows", "countries"],
