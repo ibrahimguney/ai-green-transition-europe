@@ -30,9 +30,10 @@ Extend the AI–GHG panel with macro controls that capture the green transition,
   - `nrg_cons=MWH500-1999` (band IC)
   - `unit=KWH`
   - `tax=I_TAX`
-  - `currency=EUR`
 - Semester observations are averaged to calendar-year means.
 - Variable: `electricity_price_eur_kwh`
+
+**API note:** do not send `currency=EUR` to the Eurostat Statistics API for this query. Eurostat validates filter names against dataset dimensions; the extra `currency` selector caused an HTTP 400 response in the first Step 04 run. The energy-prices visualisation can expose a currency UI selector without that selector being a valid Statistics API filter dimension.
 
 ## Run order
 
