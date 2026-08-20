@@ -80,23 +80,11 @@ Main outputs:
 - `outputs/tables/step03_sample_diagnostics.csv`
 - `outputs/tables/step03_model_summary.txt`
 
-## 5. Step 04 — Add country-year controls
-
-Download controls:
+## 5. Step 04 — Country-year controls and controlled FE
 
 ```powershell
 python src\05_download_controls.py
-```
-
-Merge controls:
-
-```powershell
 python src\06_merge_controls.py
-```
-
-Estimate controlled fixed-effects models:
-
-```powershell
 python src\07_controlled_fixed_effects.py
 ```
 
@@ -105,11 +93,44 @@ Controls:
 - renewable-energy share (`nrg_ind_ren`)
 - real GDP per capita (`nama_10_pc`)
 - R&D intensity (`rd_e_gerdtot`)
-- non-household electricity price, band IC (`nrg_pc_205`)
+- non-household electricity price, band IC (`nrg_pc_205`, optional when coverage is available)
 
 Step 04 also estimates France/Sweden-excluded robustness models because Eurostat documents a 2023 break in the enterprise ICT time series for these countries.
 
+Current controlled-FE evidence does not support a statistically significant linear AI effect or the hypothesised U-shaped digital-rebound effect.
+
 See [`STEP04.md`](STEP04.md) for the complete model sequence and interpretation rules.
+
+## 6. Step 05 — XGBoost + SHAP
+
+Install/update dependencies and run:
+
+```powershell
+pip install -r requirements.txt
+python src\08_xgboost_shap.py
+```
+
+The ML layer uses:
+
+- XGBoost regression
+- country-grouped cross-validation (`GroupKFold`)
+- NACE and year categorical effects
+- SHAP global feature importance
+- SHAP dependence analysis for AI adoption
+
+Country is not used as a predictor, and the ML results are interpreted as predictive/explanatory rather than causal.
+
+Main outputs:
+
+- `outputs/tables/xgb_cv_metrics.csv`
+- `outputs/tables/xgb_cv_predictions.csv`
+- `outputs/tables/shap_feature_importance.csv`
+- `outputs/tables/shap_ai_binned.csv`
+- `outputs/tables/step05_ml_summary.txt`
+- `outputs/figures/shap_summary.png`
+- `outputs/figures/shap_ai_dependence.png`
+
+See [`STEP05.md`](STEP05.md) for methodology and interpretation rules.
 
 ## Eurostat datasets
 
@@ -133,10 +154,10 @@ Controls:
 2. Exact NACE panel construction — complete
 3. Panel diagnostics — complete
 4. Baseline two-way FE — complete
-5. Country-year controls and controlled FE — **current stage**
-6. XGBoost + SHAP explanatory layer — next
-7. Robustness synthesis and manuscript tables — later
+5. Country-year controls and controlled FE — complete
+6. XGBoost + SHAP explanatory layer — **current stage**
+7. Econometric/ML synthesis and manuscript-ready tables — next
 
 ## Interpretation principle
 
-The current panel has only three comparable AI survey years. Results are therefore treated as **associational fixed-effects evidence**, not definitive causal estimates. Dynamic GMM is postponed until a longer comparable AI series can be constructed.
+The current panel has only three comparable AI survey years. Results are therefore treated as **associational fixed-effects evidence** plus **predictive machine-learning evidence**, not definitive causal estimates. Dynamic GMM is postponed until a longer comparable AI series can be constructed.
