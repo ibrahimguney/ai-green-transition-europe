@@ -38,25 +38,14 @@ pip install -r requirements.txt
 python src\01_download_eurostat.py
 ```
 
-Expected raw files:
-
-- `data/raw/eurostat_ai_nace.csv`
-- `data/raw/eurostat_ghg_intensity_nace.csv`
-- `data/raw/eurostat_digital_intensity_nace.csv`
-- `data/raw/eurostat_cloud_nace.csv`
-
-## 3. Step 02 — NACE harmonisation and core panel
+## 3. Step 02 — NACE harmonisation and panel diagnostics
 
 ```powershell
 python src\02_build_core_panel.py
 python src\03_panel_diagnostics.py
 ```
 
-Main output:
-
-- `data/processed/core_panel.csv`
-
-See [`STEP02.md`](STEP02.md) for methodological details.
+See [`STEP02.md`](STEP02.md).
 
 ## 4. Step 03 — Baseline fixed-effects models
 
@@ -64,21 +53,7 @@ See [`STEP02.md`](STEP02.md) for methodological details.
 python src\04_fixed_effects.py
 ```
 
-Models include:
-
-- two-way fixed effects
-- linear AI effect
-- quadratic `AI + AI²` specification
-- log-GHG primary outcome
-- winsorised level robustness
-- entity- and country-clustered inference checks
-
-Main outputs:
-
-- `outputs/tables/fixed_effects_coefficients.csv`
-- `outputs/tables/quadratic_turning_point.csv`
-- `outputs/tables/step03_sample_diagnostics.csv`
-- `outputs/tables/step03_model_summary.txt`
+Models include two-way fixed effects, linear AI, quadratic `AI + AI²`, log-GHG primary outcome, winsorised level robustness, and clustered-inference checks.
 
 ## 5. Step 04 — Country-year controls and controlled FE
 
@@ -89,60 +64,61 @@ python src\07_controlled_fixed_effects.py
 ```
 
 Controls:
-
 - renewable-energy share (`nrg_ind_ren`)
 - real GDP per capita (`nama_10_pc`)
 - R&D intensity (`rd_e_gerdtot`)
-- non-household electricity price, band IC (`nrg_pc_205`, optional when coverage is available)
+- non-household electricity price (`nrg_pc_205`, optional when coverage is available)
 
-Step 04 also estimates France/Sweden-excluded robustness models because Eurostat documents a 2023 break in the enterprise ICT time series for these countries.
+France/Sweden-excluded robustness models address the documented 2023 ICT-series break. Current controlled-FE evidence does not support a statistically significant linear AI effect or the hypothesised U-shaped digital-rebound effect.
 
-Current controlled-FE evidence does not support a statistically significant linear AI effect or the hypothesised U-shaped digital-rebound effect.
-
-See [`STEP04.md`](STEP04.md) for the complete model sequence and interpretation rules.
+See [`STEP04.md`](STEP04.md).
 
 ## 6. Step 05 — XGBoost + SHAP
-
-Install/update dependencies and run:
 
 ```powershell
 pip install -r requirements.txt
 python src\08_xgboost_shap.py
+python src\09_grouped_shap.py
 ```
 
-The ML layer uses:
+The ML layer uses XGBoost with country-grouped cross-validation (`GroupKFold`). Country is not used as a predictor. SHAP values are first calculated on transformed features and then aggregated back to original conceptual feature groups.
 
-- XGBoost regression
-- country-grouped cross-validation (`GroupKFold`)
-- NACE and year categorical effects
-- SHAP global feature importance
-- SHAP dependence analysis for AI adoption
+Current grouped-SHAP ranking:
+1. NACE sector
+2. Real GDP per capita
+3. Renewable-energy share
+4. R&D intensity
+5. AI adoption
+6. Year
 
-Country is not used as a predictor, and the ML results are interpreted as predictive/explanatory rather than causal.
+See [`STEP05.md`](STEP05.md) where available and the scripts for implementation details.
+
+## 7. Step 06 — Econometric + ML synthesis
+
+```powershell
+python src\10_synthesize_results.py
+```
 
 Main outputs:
+- `outputs/tables/manuscript_table_fe.csv`
+- `outputs/tables/manuscript_table_ml.csv`
+- `outputs/tables/manuscript_table_grouped_shap.csv`
+- `outputs/tables/evidence_synthesis.csv`
+- `manuscript/results_draft.md`
 
-- `outputs/tables/xgb_cv_metrics.csv`
-- `outputs/tables/xgb_cv_predictions.csv`
-- `outputs/tables/shap_feature_importance.csv`
-- `outputs/tables/shap_ai_binned.csv`
-- `outputs/tables/step05_ml_summary.txt`
-- `outputs/figures/shap_summary.png`
-- `outputs/figures/shap_ai_dependence.png`
+The Results draft is generated directly from the numerical analysis outputs to reduce transcription errors and keep the manuscript synchronized with rerun analyses.
 
-See [`STEP05.md`](STEP05.md) for methodology and interpretation rules.
+See [`STEP06.md`](STEP06.md).
 
 ## Eurostat datasets
 
 Core:
-
 - `isoc_eb_ain2` — Artificial intelligence by NACE Rev. 2 activity
 - `env_ac_aeint_r2` — Air emissions intensities by NACE Rev. 2 activity
 - `isoc_e_diin2` — Digital Intensity by NACE Rev. 2 activity
 - `isoc_cicce_usen2` — Cloud computing services by NACE Rev. 2 activity
 
 Controls:
-
 - `nrg_ind_ren` — Share of energy from renewable sources
 - `nama_10_pc` — GDP and main components per capita
 - `rd_e_gerdtot` — GERD by sector of performance
@@ -155,9 +131,10 @@ Controls:
 3. Panel diagnostics — complete
 4. Baseline two-way FE — complete
 5. Country-year controls and controlled FE — complete
-6. XGBoost + SHAP explanatory layer — **current stage**
-7. Econometric/ML synthesis and manuscript-ready tables — next
+6. XGBoost + SHAP explanatory layer — complete
+7. Econometric/ML synthesis and manuscript-ready tables — **current stage**
+8. Methods, Discussion, limitations, and full manuscript assembly — next
 
 ## Interpretation principle
 
-The current panel has only three comparable AI survey years. Results are therefore treated as **associational fixed-effects evidence** plus **predictive machine-learning evidence**, not definitive causal estimates. Dynamic GMM is postponed until a longer comparable AI series can be constructed.
+The current panel has only three comparable AI survey years. Results are therefore treated as **associational fixed-effects evidence** plus **predictive machine-learning evidence**, not definitive causal estimates. The current evidence is best described as an **absence of robust evidence for an independent AI green effect in the available data**, not as proof that AI has no environmental consequences.
