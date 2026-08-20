@@ -2,7 +2,7 @@
 
 Research project:
 
-**Artificial Intelligence and the Green Transition: Does AI Adoption Reduce Carbon Intensity or Create a Digital Rebound Effect in Europe?**
+**Artificial Intelligence and the Green Transition: Does Enterprise AI Adoption Reduce Carbon Intensity or Create a Digital Rebound Effect in Europe?**
 
 ## Research design
 
@@ -76,12 +76,11 @@ See [`STEP04.md`](STEP04.md).
 ## 6. Step 05 — XGBoost + SHAP
 
 ```powershell
-pip install -r requirements.txt
 python src\08_xgboost_shap.py
 python src\09_grouped_shap.py
 ```
 
-The ML layer uses XGBoost with country-grouped cross-validation (`GroupKFold`). Country is not used as a predictor. SHAP values are first calculated on transformed features and then aggregated back to original conceptual feature groups.
+The ML layer uses XGBoost with country-grouped cross-validation (`GroupKFold`). Country is not used as a predictor. SHAP values are aggregated back to original conceptual feature groups.
 
 Current grouped-SHAP ranking:
 1. NACE sector
@@ -90,8 +89,6 @@ Current grouped-SHAP ranking:
 4. R&D intensity
 5. AI adoption
 6. Year
-
-See [`STEP05.md`](STEP05.md) where available and the scripts for implementation details.
 
 ## 7. Step 06 — Econometric + ML synthesis
 
@@ -106,23 +103,33 @@ Main outputs:
 - `outputs/tables/evidence_synthesis.csv`
 - `manuscript/results_draft.md`
 
-The Results draft is generated directly from the numerical analysis outputs to reduce transcription errors and keep the manuscript synchronized with rerun analyses.
-
 See [`STEP06.md`](STEP06.md).
 
-## Eurostat datasets
+## 8. Step 07 — Full manuscript assembly
 
-Core:
-- `isoc_eb_ain2` — Artificial intelligence by NACE Rev. 2 activity
-- `env_ac_aeint_r2` — Air emissions intensities by NACE Rev. 2 activity
-- `isoc_e_diin2` — Digital Intensity by NACE Rev. 2 activity
-- `isoc_cicce_usen2` — Cloud computing services by NACE Rev. 2 activity
+Narrative manuscript modules:
+- `manuscript/front_matter.md`
+- `manuscript/introduction_draft.md`
+- `manuscript/literature_review_draft.md`
+- `manuscript/methods_draft.md`
+- `manuscript/results_draft.md` (generated from Step 06)
+- `manuscript/discussion_draft.md`
+- `manuscript/conclusion_draft.md`
 
-Controls:
-- `nrg_ind_ren` — Share of energy from renewable sources
-- `nama_10_pc` — GDP and main components per capita
-- `rd_e_gerdtot` — GERD by sector of performance
-- `nrg_pc_205` — Non-household electricity prices
+Assemble the full manuscript with:
+
+```powershell
+python src\11_build_full_manuscript.py
+```
+
+Output:
+- `manuscript/manuscript_full.md`
+
+Journal targeting notes:
+- `manuscript/journal_targets.md`
+
+References:
+- `references/references_step07.bib`
 
 ## Current research sequence
 
@@ -132,8 +139,9 @@ Controls:
 4. Baseline two-way FE — complete
 5. Country-year controls and controlled FE — complete
 6. XGBoost + SHAP explanatory layer — complete
-7. Econometric/ML synthesis and manuscript-ready tables — **current stage**
-8. Methods, Discussion, limitations, and full manuscript assembly — next
+7. Econometric/ML synthesis and manuscript-ready tables — complete
+8. Full manuscript assembly and journal targeting — **current stage**
+9. Journal-specific formatting, figures, highlights, cover letter, and submission package — next
 
 ## Interpretation principle
 
